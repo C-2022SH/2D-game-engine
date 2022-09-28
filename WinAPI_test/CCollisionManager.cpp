@@ -254,10 +254,7 @@ Dir4 CCollisionManager::check_collisionDir(CCollider* _pLeft, CCollider* _pRight
 	// 
 	Dir4 dCollidedDir = Dir4();
 
-	// --- 수직(상하) ---
 	check_upDownCollision(arrLeftVertices, arrRightVertices, _pLeft->GetFinalPosition(), _pRight->GetFinalPosition(), &dCollidedDir);
-
-	// --- 수평(좌우) ---
 	check_leftRightCollision(arrLeftVertices, arrRightVertices, _pLeft->GetFinalPosition(), _pRight->GetFinalPosition(), &dCollidedDir);
 
 	return dCollidedDir;
@@ -269,46 +266,36 @@ void CCollisionManager::check_upDownCollision(Vector2* _arrLeft, Vector2* _arrRi
 	if (_arrLeft[0].x > _arrRight[0].x && _arrLeft[2].x > _arrRight[2].x)
 	{
 		// 나의 최좌단이 상대의 최우단보다 아래에 있다면 - 위에서 충돌
-		if (_arrLeft[0].y > _arrRight[2].y)
-			(*_dCollidedDir).up += 1;
-
+		if (_arrLeft[0].y > _arrRight[2].y) (*_dCollidedDir).up += 1;
 		// 아니라면 - 아래에서 충돌
-		else
-			(*_dCollidedDir).down += 1;
+		else (*_dCollidedDir).down += 1;
 	}
 
 	// 나의 최좌단과 최우단 사이에 상대의 최좌단이 있다.
 	else if (_arrLeft[0].x < _arrRight[0].x && _arrLeft[2].x < _arrRight[2].x)
 	{
 		// 나의 최우단이 상대의 최좌단보다 아래에 있다면 - 위에서 충돌
-		if (_arrLeft[2].y > _arrRight[0].y)
-			(*_dCollidedDir).up += 1;
-
+		if (_arrLeft[2].y > _arrRight[0].y) (*_dCollidedDir).up += 1;
 		// 아니라면 - 아래에서 충돌
-		else
-			(*_dCollidedDir).left += 1;
+		else (*_dCollidedDir).left += 1;
 	}
 
 	// 상대의 좌우 폭이 나보다 크다. (내가 상대 안에 쏙 들어가 있다)
 	else if (_arrRight[0].x < _arrLeft[0].x && _arrRight[2].x > _arrLeft[2].x)
 	{
-		float fCCW = _arrRight[0].ccw(_arrRight[2], _vLeftCenter);
+		float fCCW = _arrRight[0].CCW(_arrRight[2], _vLeftCenter);
 
-		if (fCCW > 0)
-			(*_dCollidedDir).up += 1;
-		else
-			(*_dCollidedDir).down += 1;
+		if (fCCW > 0) (*_dCollidedDir).up += 1;
+		else (*_dCollidedDir).down += 1;
 	}
 
 	// 나의 좌우 폭이 상대보다 크다. (상대가 내 안에 쏙 들어가 있다)
 	else
 	{
-		float fCCW = _arrLeft[0].ccw(_arrLeft[2], _vRightCenter);
+		float fCCW = _arrLeft[0].CCW(_arrLeft[2], _vRightCenter);
 
-		if (fCCW > 0)
-			(*_dCollidedDir).down += 1;
-		else
-			(*_dCollidedDir).up += 1;
+		if (fCCW > 0) (*_dCollidedDir).down += 1;
+		else (*_dCollidedDir).up += 1;
 	}
 }
 
@@ -318,46 +305,36 @@ void CCollisionManager::check_leftRightCollision(Vector2* _arrLeft, Vector2* _ar
 	if (_arrLeft[1].y < _arrRight[1].y && _arrLeft[3].y < _arrRight[3].y)
 	{
 		// 나의 최하단이 상대의 최상단보다 오른쪽에 있다면 - 왼쪽에서 충돌
-		if (_arrLeft[3].x > _arrRight[1].x)
-			(*_dCollidedDir).left += 1;
-
+		if (_arrLeft[3].x > _arrRight[1].x) (*_dCollidedDir).left += 1;
 		// 아니라면 - 오른쪽에서 충돌
-		else
-			(*_dCollidedDir).right += 1;
+		else (*_dCollidedDir).right += 1;
 	}
 
 	// 나의 최상단과 최하단 사이에 상대의 최하단이 있다.
 	else if (_arrLeft[1].y < _arrRight[1].y && _arrLeft[3].y < _arrRight[3].y)
 	{
 		// 나의 최상단이 상대의 최하단보다 오른쪽에 있다면 - 오른쪽에서 충돌
-		if (_arrRight[1].x > _arrRight[3].x)
-			(*_dCollidedDir).right += 1;
-
+		if (_arrRight[1].x > _arrRight[3].x) (*_dCollidedDir).right += 1;
 		// 아니라면 - 왼쪽에서 충돌
-		else
-			(*_dCollidedDir).left += 1;
+		else (*_dCollidedDir).left += 1;
 	}
 
 	// 상대의 상하 폭이 나보다 크다. (내가 상대 안에 쏙 들어가 있다)
 	else if (_arrRight[1].y < _arrLeft[1].y && _arrRight[3].y > _arrLeft[3].y)
 	{
-		float fCCW = _arrRight[1].ccw(_arrRight[3], _vLeftCenter);
+		float fCCW = _arrRight[1].CCW(_arrRight[3], _vLeftCenter);
 
-		if (fCCW > 0)
-			(*_dCollidedDir).right += 1;
-		else
-			(*_dCollidedDir).left += 1;
+		if (fCCW > 0) (*_dCollidedDir).right += 1;
+		else (*_dCollidedDir).left += 1;
 	}
 
 	// 나의 상하 폭이 상대보다 크다. (상대가 내 안에 쏙 들어가 있다)
 	else
 	{
-		float fCCW = _arrLeft[1].ccw(_arrLeft[3], _vRightCenter);
+		float fCCW = _arrLeft[1].CCW(_arrLeft[3], _vRightCenter);
 
-		if (fCCW > 0)
-			(*_dCollidedDir).left += 1;
-		else
-			(*_dCollidedDir).right += 1;
+		if (fCCW > 0) (*_dCollidedDir).left += 1;
+		else (*_dCollidedDir).right += 1;
 	}
 }
 

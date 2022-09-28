@@ -101,7 +101,7 @@ public:
 		return x * _pVec.x + y * _pVec.y;
 	}
 
-	float ccw(const Vector2& _pFirstVec, const Vector2& _pSecondVec)
+	float CCW(const Vector2& _pFirstVec, const Vector2& _pSecondVec)
 	{
 		return (_pFirstVec.x - x) * (_pSecondVec.y - y) - (_pFirstVec.y - y) * (_pSecondVec.x - x);
 	}
