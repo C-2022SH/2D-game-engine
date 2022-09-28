@@ -41,5 +41,7 @@ private:
 
 	bool check_axisCollision(CCollider* _pTarget, CCollider* _pOther);
 	Dir4 check_collisionDir(CCollider* _pLeft, CCollider* _pRight);
+	void check_upDownCollision(Vector2* _arrLeft, Vector2* _arrRight, Vector2 _vLeftCenter, Vector2 _vRightCenter, Dir4* _dCollidedDir);
+	void check_leftRightCollision(Vector2* _arrLeft, Vector2* _arrRight, Vector2 _vLeftCenter, Vector2 _vRightCenter, Dir4* _dCollidedDir);
 	void order_vertices(Vector2* _arrVertices, CCollider* _pTarget);
 };

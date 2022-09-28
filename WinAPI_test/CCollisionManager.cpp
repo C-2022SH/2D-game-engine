@@ -46,7 +46,6 @@ void CCollisionManager::collisionGroup_update(OBJECT_TYPE _eLeft, OBJECT_TYPE _e
 	// 이전 충돌 정보를 받아 올 iterator
 	map<ULONGLONG, bool>::iterator iter;
 
-
 	// 두 그룹의 물체들을 전부 받아온다
 	// 같은 그룹에 있는 경우 두 번 체크된다! 주의
 	for (size_t i = 0; i < vecLeft.size(); i++)
@@ -56,7 +55,6 @@ void CCollisionManager::collisionGroup_update(OBJECT_TYPE _eLeft, OBJECT_TYPE _e
 		if (pLeftCollider == nullptr)
 			continue;
 
-
 		for (size_t j = 0; j < vecRight.size(); j++)
 		{
 			CCollider* pRightCollider = vecRight[j]->GetCollider();
@@ -64,7 +62,6 @@ void CCollisionManager::collisionGroup_update(OBJECT_TYPE _eLeft, OBJECT_TYPE _e
 			// 자기 자신인 경우에도 체크 안함!!
 			if (pRightCollider == nullptr || vecLeft[i] == vecRight[j])
 				continue;
-
 
 			// 두 충돌체 조합 아이디 생성
 			COLLIDER_ID ID;
@@ -80,7 +77,6 @@ void CCollisionManager::collisionGroup_update(OBJECT_TYPE _eLeft, OBJECT_TYPE _e
 				m_mapCollisionInfo.insert(make_pair(ID.ID, false));
 				iter = m_mapCollisionInfo.find(ID.ID);
 			}
-			
 
 			// ==================
 			// |	충돌 액션		|
@@ -259,191 +255,110 @@ Dir4 CCollisionManager::check_collisionDir(CCollider* _pLeft, CCollider* _pRight
 	Dir4 dCollidedDir = Dir4();
 
 	// --- 수직(상하) ---
-	//
+	check_upDownCollision(arrLeftVertices, arrRightVertices, _pLeft->GetFinalPosition(), _pRight->GetFinalPosition(), &dCollidedDir);
+
+	// --- 수평(좌우) ---
+	check_leftRightCollision(arrLeftVertices, arrRightVertices, _pLeft->GetFinalPosition(), _pRight->GetFinalPosition(), &dCollidedDir);
+
+	return dCollidedDir;
+}
+
+void CCollisionManager::check_upDownCollision(Vector2* _arrLeft, Vector2* _arrRight, Vector2 _vLeftCenter, Vector2 _vRightCenter, Dir4* _dCollidedDir)
+{
 	// 나의 최좌단과 최우단 사이에 상대의 최우단이 있다.
-	if (arrLeftVertices[0].x > arrRightVertices[0].x && arrLeftVertices[2].x > arrRightVertices[2].x)
+	if (_arrLeft[0].x > _arrRight[0].x && _arrLeft[2].x > _arrRight[2].x)
 	{
 		// 나의 최좌단이 상대의 최우단보다 아래에 있다면 - 위에서 충돌
-		if (arrLeftVertices[0].y > arrRightVertices[2].y)
-			dCollidedDir += Dir4(0, 1, 0, 0);
+		if (_arrLeft[0].y > _arrRight[2].y)
+			(*_dCollidedDir).up += 1;
 
 		// 아니라면 - 아래에서 충돌
 		else
-			dCollidedDir += Dir4(0, 0, 0, 1);
+			(*_dCollidedDir).down += 1;
 	}
 
 	// 나의 최좌단과 최우단 사이에 상대의 최좌단이 있다.
-	else if (arrLeftVertices[0].x < arrRightVertices[0].x && arrLeftVertices[2].x < arrRightVertices[2].x)
+	else if (_arrLeft[0].x < _arrRight[0].x && _arrLeft[2].x < _arrRight[2].x)
 	{
 		// 나의 최우단이 상대의 최좌단보다 아래에 있다면 - 위에서 충돌
-		if (arrLeftVertices[2].y > arrRightVertices[0].y)
-			dCollidedDir += Dir4(0, 1, 0, 0);
+		if (_arrLeft[2].y > _arrRight[0].y)
+			(*_dCollidedDir).up += 1;
 
-		// 아니라면 아래에서 - 충돌
+		// 아니라면 - 아래에서 충돌
 		else
-			dCollidedDir += Dir4(0, 0, 0, 1);
+			(*_dCollidedDir).left += 1;
 	}
 
 	// 상대의 좌우 폭이 나보다 크다. (내가 상대 안에 쏙 들어가 있다)
-	else if (arrRightVertices[0].x < arrLeftVertices[0].x && arrRightVertices[2].x > arrLeftVertices[2].x)
+	else if (_arrRight[0].x < _arrLeft[0].x && _arrRight[2].x > _arrLeft[2].x)
 	{
-		float fDX = arrRightVertices[0].x - arrRightVertices[2].x;
+		float fCCW = _arrRight[0].ccw(_arrRight[2], _vLeftCenter);
 
-		// 대각선이 수평인 경우 그냥 y 값만 비교
-		if (fDX == 0)
-		{
-			// 상대의 중심이 나보다 아래쪽에 있다면 - 아래에서 충돌
-			if (_pLeft->GetFinalPosition().y < _pRight->GetFinalPosition().y)
-				dCollidedDir += Dir4(0, 0, 0, 1);
-
-			// 상대의 중심이 나보다 위쪽에 있다면 - 위에서 충돌
-			else
-				dCollidedDir += Dir4(0, 1, 0, 0);
-		}
-
-		// 아닌 경우 일차함수 공간 분할으로 비교
+		if (fCCW > 0)
+			(*_dCollidedDir).up += 1;
 		else
-		{
-			float fSlope = (arrRightVertices[0].y - arrRightVertices[2].y) / fDX;
-
-			// 나의 중심이 대각선보다 위에 있다면 - 아래에서 충돌
-			if ((fSlope * (_pLeft->GetFinalPosition().x - _pRight->GetFinalPosition().x) + _pRight->GetFinalPosition().y)
-				> _pLeft->GetFinalPosition().y)
-				dCollidedDir += Dir4(0, 0, 0, 1);
-			
-			// 나의 중심이 대각선보다 아래에 있다면 - 위에서 충돌
-			else
-				dCollidedDir += Dir4(0, 1, 0, 0);
-		}
+			(*_dCollidedDir).down += 1;
 	}
 
 	// 나의 좌우 폭이 상대보다 크다. (상대가 내 안에 쏙 들어가 있다)
 	else
 	{
-		float fDX = arrLeftVertices[0].x - arrLeftVertices[2].x;
+		float fCCW = _arrLeft[0].ccw(_arrLeft[2], _vRightCenter);
 
-		// 대각선이 수평인 경우 그냥 y 값만 비교
-		if (fDX == 0)
-		{
-			// 상대의 중심이 나보다 아래쪽에 있다면 - 아래에서 충돌
-			if (_pLeft->GetFinalPosition().y < _pRight->GetFinalPosition().y)
-				dCollidedDir += Dir4(0, 0, 0, 1);
-
-			// 상대의 중심이 나보다 위쪽에 있다면 - 위에서 충돌
-			else
-				dCollidedDir += Dir4(0, 1, 0, 0);
-		}
-
-		// 아닌 경우 일차함수 공간 분할으로 비교
+		if (fCCW > 0)
+			(*_dCollidedDir).down += 1;
 		else
-		{
-			float fSlope = (arrLeftVertices[0].y - arrLeftVertices[2].y) / fDX;
-
-			// 상대의 중심이 대각선보다 위에 있다면 - 위에서 충돌
-			if ((fSlope * (_pRight->GetFinalPosition().x - _pLeft->GetFinalPosition().x) + _pLeft->GetFinalPosition().y)
-				> _pRight->GetFinalPosition().y)
-				dCollidedDir += Dir4(0, 1, 0, 0);
-
-			// 상대의 중심이 대각선보다 아래에 있다면 - 아래에서 충돌
-			else
-				dCollidedDir += Dir4(0, 0, 0, 1);
-		}
+			(*_dCollidedDir).up += 1;
 	}
+}
 
-
-	// --- 수평(좌우) ---
-	//
+void CCollisionManager::check_leftRightCollision(Vector2* _arrLeft, Vector2* _arrRight, Vector2 _vLeftCenter, Vector2 _vRightCenter, Dir4* _dCollidedDir)
+{
 	// 나의 최상단과 최하단 사이에 상대의 최상단이 있다.
-	if (arrLeftVertices[1].y < arrRightVertices[1].y && arrLeftVertices[3].y < arrRightVertices[3].y)
+	if (_arrLeft[1].y < _arrRight[1].y && _arrLeft[3].y < _arrRight[3].y)
 	{
 		// 나의 최하단이 상대의 최상단보다 오른쪽에 있다면 - 왼쪽에서 충돌
-		if (arrLeftVertices[3].x > arrRightVertices[1].x)
-			dCollidedDir += Dir4(1, 0, 0, 0);
+		if (_arrLeft[3].x > _arrRight[1].x)
+			(*_dCollidedDir).left += 1;
 
 		// 아니라면 - 오른쪽에서 충돌
 		else
-			dCollidedDir += Dir4(0, 0, 1, 0);
+			(*_dCollidedDir).right += 1;
 	}
 
 	// 나의 최상단과 최하단 사이에 상대의 최하단이 있다.
-	else if (arrLeftVertices[1].y < arrRightVertices[1].y && arrLeftVertices[3].y < arrRightVertices[3].y)
+	else if (_arrLeft[1].y < _arrRight[1].y && _arrLeft[3].y < _arrRight[3].y)
 	{
 		// 나의 최상단이 상대의 최하단보다 오른쪽에 있다면 - 오른쪽에서 충돌
-		if (arrLeftVertices[1].x > arrRightVertices[3].x)
-			dCollidedDir += Dir4(1, 0, 0, 0);
+		if (_arrRight[1].x > _arrRight[3].x)
+			(*_dCollidedDir).right += 1;
 
 		// 아니라면 - 왼쪽에서 충돌
 		else
-			dCollidedDir += Dir4(0, 0, 1, 0);
+			(*_dCollidedDir).left += 1;
 	}
 
 	// 상대의 상하 폭이 나보다 크다. (내가 상대 안에 쏙 들어가 있다)
-	else if (arrRightVertices[1].y < arrLeftVertices[1].y && arrRightVertices[3].y > arrLeftVertices[3].y)
+	else if (_arrRight[1].y < _arrLeft[1].y && _arrRight[3].y > _arrLeft[3].y)
 	{
-		float fDY = arrRightVertices[1].y - arrRightVertices[3].y;
+		float fCCW = _arrRight[1].ccw(_arrRight[3], _vLeftCenter);
 
-		// 대각선이 수평인 경우 그냥 x 값만 비교
-		if (fDY == 0)
-		{
-			// 상대의 중심이 나보다 오른쪽에 있다면 - 오른쪽에서 충돌
-			if (_pLeft->GetFinalPosition().x < _pRight->GetFinalPosition().x)
-				dCollidedDir += Dir4(0, 0, 1, 0);
-
-			// 상대의 중심이 나보다 왼쪽에 있다면 - 왼쪽에서 충돌
-			else
-				dCollidedDir += Dir4(1, 0, 0, 0);
-		}
-
-		// 아닌 경우 일차함수 공간 분할으로 비교
+		if (fCCW > 0)
+			(*_dCollidedDir).right += 1;
 		else
-		{
-			float fSlope = (arrRightVertices[1].x - arrRightVertices[3].x) / fDY;
-
-			// 나의 중심이 대각선보다 왼쪽에 있다면 - 오른쪽에서 충돌
-			if ((fSlope * (_pLeft->GetFinalPosition().y - _pRight->GetFinalPosition().y) + _pRight->GetFinalPosition().x)
-				> _pLeft->GetFinalPosition().x)
-				dCollidedDir += Dir4(0, 0, 1, 0);
-
-			// 나의 중심이 대각선보다 오른쪽에 있다면 - 왼쪽에서 충돌
-			else
-				dCollidedDir += Dir4(1, 0, 0, 0);
-		}
+			(*_dCollidedDir).left += 1;
 	}
 
 	// 나의 상하 폭이 상대보다 크다. (상대가 내 안에 쏙 들어가 있다)
 	else
 	{
-		float fDY = arrLeftVertices[1].y - arrLeftVertices[3].y;
+		float fCCW = _arrLeft[1].ccw(_arrLeft[3], _vRightCenter);
 
-		// 대각선이 수평인 경우 그냥 x 값만 비교
-		if (fDY == 0)
-		{
-			// 상대의 중심이 나보다 오른쪽에 있다면 - 오른쪽에서 충돌
-			if (_pLeft->GetFinalPosition().x < _pRight->GetFinalPosition().x)
-				dCollidedDir += Dir4(0, 0, 1, 0);
-
-			// 상대의 중심이 나보다 왼쪽에 있다면 - 왼쪽에서 충돌
-			else
-				dCollidedDir += Dir4(1, 0, 0, 0);
-		}
-
-		// 아닌 경우 일차함수 공간 분할으로 비교
+		if (fCCW > 0)
+			(*_dCollidedDir).left += 1;
 		else
-		{
-			float fSlope = (arrLeftVertices[1].x - arrLeftVertices[3].x) / fDY;
-
-			// 상대의 중심이 대각선보다 왼쪽에 있다면 - 왼쪽에서 충돌
-			if ((fSlope * (_pRight->GetFinalPosition().y - _pLeft->GetFinalPosition().y) + _pLeft->GetFinalPosition().x)
-			> _pRight->GetFinalPosition().x)
-				dCollidedDir += Dir4(1, 0, 0, 0);
-
-			// 상대의 중심이 대각선보다 오른쪽에 있다면 - 오른쪽에서 충돌
-			else
-				dCollidedDir += Dir4(0, 0, 1, 0);
-		}
+			(*_dCollidedDir).right += 1;
 	}
-
-	return dCollidedDir;
 }
 
 // _arrVertices 의 인덱스는 [0 최좌단, 1 최상단, 2 최우단, 3 최하단] 을 의미한다.
